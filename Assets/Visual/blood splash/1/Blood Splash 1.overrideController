@@ -1,0 +1,13 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!221 &22100000
+AnimatorOverrideController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Blood Splash 1
+  m_Controller: {fileID: 9100000, guid: ecb4e7aa1cdbd65408adf4c268f5b9ce, type: 2}
+  m_Clips:
+  - m_OriginalClip: {fileID: 7400000, guid: d7cccec11ef8f8145919e5e4b2c1c459, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 4cdbe6292cd551146a3d2bf1c93f8c30, type: 2}
