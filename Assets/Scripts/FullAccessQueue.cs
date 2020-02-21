@@ -91,6 +91,10 @@ public class FullAccessQueue<T>
                         return items[index];
                     }
                 }
+                else if(front == 0 && rear == items.Length - 1) //full array with front less than rear
+                {
+                    return items[index];
+                }
                 else
                 {
                     if (index > rear || index < front)
@@ -113,6 +117,10 @@ public class FullAccessQueue<T>
                     {
                         items[index] = value;
                     }
+                }
+                else if (front == 0 && rear == items.Length - 1) //full array with front less than rear
+                {
+                    items[index] = value;
                 }
                 else
                 {

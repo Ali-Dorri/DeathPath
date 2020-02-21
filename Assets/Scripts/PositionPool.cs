@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "Position Pool", menuName = "Position Pool")]
-public class PositionPool : ScriptableObject
+public class PositionPool : MonoBehaviour
 {
     [SerializeField] GameObject positionPrefab;
     Stack<Transform> pool;
@@ -16,11 +16,20 @@ public class PositionPool : ScriptableObject
         {
             if(instance == null)
             {
-                instance = Resources.Load<PositionPool>("Position Pool");
+                instance = FindObjectOfType<PositionPool>();
                 instance.Initialize();
             }
 
             return instance;
+        }
+    }
+
+    private void Awake()
+    {
+        if(instance == null)
+        {
+            instance = this;
+            Initialize();
         }
     }
 
@@ -61,5 +70,13 @@ public class PositionPool : ScriptableObject
     {
         position.gameObject.SetActive(false);
         pool.Push(position);
+    }
+
+    void OnDestroy()
+    {
+        if(instance == this)
+        {
+            instance = null;
+        }
     }
 }

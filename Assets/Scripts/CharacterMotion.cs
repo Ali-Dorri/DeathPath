@@ -10,13 +10,16 @@ public class CharacterMotion : MonoBehaviour
     FullAccessQueue<Transform> movePath;
     new Rigidbody2D rigidbody;
     float pointsLength;
+    public bool isActive = true;
 
     //move
     [Header("Move")]
     [SerializeField] float baseMoveSpeed = 2;
     [Tooltip("put speed and time between 0 to 1")]
     [SerializeField] AnimationCurve moveSpeedCurve;
+    [SerializeField] float moveCurveTimeScale = 1;
     Vector2 moveVelocity;
+    float moveVelocitySize;
     float passedLength;
     float passedMoveAccelerationTime;
     Transform startPoint;
@@ -26,10 +29,10 @@ public class CharacterMotion : MonoBehaviour
     [SerializeField] float baseSpinSpeed = 20;
     [Tooltip("put speed and time between 0 to 1")]
     [SerializeField] AnimationCurve spinSpeedCurve;
-    public float spinVelocity;
+    float spinVelocity;
     public float baseInverseSpinAcceleration = 100;
     public AnimationCurve inverseSpinAccelerationCurve;
-    public float inversSpinTimeScale = 1;
+    public float inverseSpinTimeScale = 1;
     float passedSpinTime;
     Vector2 lastSpinTarget;
     float spin;
@@ -38,8 +41,16 @@ public class CharacterMotion : MonoBehaviour
     //interpolation
     const int BEZIER_ESTIMATE_POINTS_COUNT = 100;    //enough precision for this game
     float[] cumulativeLengths = new float[BEZIER_ESTIMATE_POINTS_COUNT + 1];
-    const float SPEED_CURVE_PRECISION = 0.0001f;
+    const float SPEED_CURVE_PRECISION = 0.000001f;
     static List<Vector2> tempBezierPoints = new List<Vector2>();
+
+    //properties
+    public float SpinVelocity => spinVelocity;
+    public Vector2 MoveVelocity => moveVelocity;
+    public float MinSpinVelocity => baseSpinSpeed * spinSpeedCurve.Evaluate(0);
+    public float MinMoveVelocity => baseMoveSpeed * moveSpeedCurve.Evaluate(0);
+    public float MaxSpinVelocity => baseSpinSpeed * spinSpeedCurve.Evaluate(1);
+    public float MaxMoveVelocity => baseMoveSpeed * moveSpeedCurve.Evaluate(1);
 
     private void Awake()
     {
@@ -84,9 +95,9 @@ public class CharacterMotion : MonoBehaviour
 
         CalculateBezierLength();
         //set start velocities
-        Vector2 startPointTangent = (GetBezierPoint(1f / BEZIER_ESTIMATE_POINTS_COUNT) - GetBezierPoint(0)).normalized;
-        moveVelocity = startPointTangent * baseMoveSpeed * moveSpeedCurve.Evaluate(0);
-        spinVelocity = baseSpinSpeed * spinSpeedCurve.Evaluate(0);
+        //Vector2 startPointTangent = (GetBezierPoint(1f / BEZIER_ESTIMATE_POINTS_COUNT) - GetBezierPoint(0)).normalized;
+        //moveVelocity = startPointTangent * baseMoveSpeed * moveSpeedCurve.Evaluate(0);
+        //spinVelocity = baseSpinSpeed * spinSpeedCurve.Evaluate(0);
     }
 
     void CalculateBezierLength()
@@ -109,42 +120,52 @@ public class CharacterMotion : MonoBehaviour
 
     private void FixedUpdate()
     {
-        //BezierMove();
-        RotateToNextPoint();
-        UpdateMovePath();
+        if (isActive)
+        {
+            BezierMove();
+            RotateToNextPoint();
+            UpdateMovePath();
+            moveVelocitySize = moveVelocity.magnitude;
+        }
     }
 
     void BezierMove()
     {
-        if(movePath.Count > 0)
+        if (movePath.Count > 0)
         {
-            passedMoveAccelerationTime = Mathf.Clamp(passedMoveAccelerationTime + Time.fixedDeltaTime, 0, 1);
+            float prevMoveTime = passedMoveAccelerationTime;
+            passedMoveAccelerationTime = (passedMoveAccelerationTime + Time.fixedDeltaTime) / moveCurveTimeScale; 
+            passedMoveAccelerationTime = Mathf.Clamp(passedMoveAccelerationTime, 0, 1);
             float speedSize = baseMoveSpeed * moveSpeedCurve.Evaluate(passedMoveAccelerationTime);
             float moveLength = speedSize * Time.fixedDeltaTime;
             passedLength += moveLength;
             float interpolate = GetBezierInterpolate(passedLength);
             Vector2 nextPoint = GetBezierPoint(interpolate);
-            interpolate = GetBezierInterpolate(passedLength + Time.fixedDeltaTime); //next next interpolate
-            Vector2 nextNextPoint = GetBezierPoint(interpolate);
-            Vector2 nextTangent = (nextNextPoint - nextPoint).normalized;
-            moveVelocity = speedSize  * moveVelocity.normalized;
-            rigidbody.position = nextPoint;
-
-            float deltaAngle = Vector2.Angle(moveVelocity, nextTangent);
-            //make the velocity it's projection on nextTangent vector
-            moveVelocity = Mathf.Cos(deltaAngle * Mathf.PI / 180f) * moveVelocity.magnitude * nextTangent;
-
-            //find next passedTime
-            float minMoveSpeed = baseMoveSpeed * moveSpeedCurve.Evaluate(0);
-            if (moveVelocity.magnitude < minMoveSpeed)
+            Vector2 tangent = (nextPoint - rigidbody.position).normalized;
+            if (moveVelocity.magnitude == 0)
             {
-                moveVelocity = minMoveSpeed * moveVelocity.normalized;
+                moveVelocity = tangent * speedSize;
+            }
+            float deltaAngle = Vector2.Angle(moveVelocity, tangent);
+            //make the velocity it's projection on nextTangent vector
+            speedSize = Mathf.Cos(deltaAngle * Mathf.PI / 180f) * moveVelocity.magnitude;
+            float minMoveSpeed = baseMoveSpeed * moveSpeedCurve.Evaluate(0);
+            if (speedSize < minMoveSpeed)
+            {
+                moveVelocity = minMoveSpeed * tangent;
                 passedMoveAccelerationTime = 0;
             }
             else
             {
-                passedMoveAccelerationTime = GetSpeedCurveTime(moveSpeedCurve, moveVelocity.magnitude, baseMoveSpeed);
+                moveVelocity = speedSize * tangent;
+                //passedMoveAccelerationTime = GetCurveTime(moveSpeedCurve, speedSize / baseMoveSpeed) * moveCurveTimeScale;
+                //if(FloatEquals(prevMoveTime, passedMoveAccelerationTime, Time.fixedDeltaTime * 2))  //passed time was not increased because of find time precision
+                //{
+                //    passedMoveAccelerationTime = (prevMoveTime + Time.fixedDeltaTime) / moveCurveTimeScale;
+                //    passedMoveAccelerationTime = Mathf.Clamp(passedMoveAccelerationTime, 0, 1) * moveCurveTimeScale;
+                //}
             }
+            rigidbody.position = nextPoint;
         }
         else
         {
@@ -183,7 +204,7 @@ public class CharacterMotion : MonoBehaviour
                     prevInverseSpin = inverseSpin;
                 }
 
-                float timeInterval = Mathf.Clamp(passedSpinTime * inversSpinTimeScale, 0, 1);
+                float timeInterval = Mathf.Clamp(passedSpinTime * inverseSpinTimeScale, 0, 1);
                 float inverseAcceleration = baseInverseSpinAcceleration * inverseSpinAccelerationCurve.Evaluate(timeInterval);
                 spinVelocity += -Mathf.Sign(spinVelocity) * Mathf.Abs(inverseAcceleration * Time.fixedDeltaTime);
                 spin = spinVelocity * Time.fixedDeltaTime;
@@ -191,7 +212,7 @@ public class CharacterMotion : MonoBehaviour
             }
             else
             {
-                passedSpinTime = GetSpeedCurveTime(spinSpeedCurve, Mathf.Abs(spinVelocity), baseSpinSpeed);
+                passedSpinTime = GetCurveTime(spinSpeedCurve, Mathf.Abs(spinVelocity) / baseSpinSpeed);
                 passedSpinTime = Mathf.Clamp(passedSpinTime + Time.fixedDeltaTime, 0, 1);
                 spinVelocity = Mathf.Sign(spinVelocity) * baseSpinSpeed * spinSpeedCurve.Evaluate(passedSpinTime);
                 spin = spinVelocity * Time.fixedDeltaTime;
@@ -201,7 +222,7 @@ public class CharacterMotion : MonoBehaviour
             {
                 transform.up = toTarget;
                 float performedSpeed = toEndAngle / Time.fixedDeltaTime;
-                passedSpinTime = GetSpeedCurveTime(spinSpeedCurve, Mathf.Abs(performedSpeed), baseSpinSpeed);
+                passedSpinTime = GetCurveTime(spinSpeedCurve, Mathf.Abs(performedSpeed) / baseSpinSpeed);
             }
             else
             {
@@ -214,7 +235,7 @@ public class CharacterMotion : MonoBehaviour
                     //check inverse speed with rotation to target after spin acceleration
                     if (toEndAngle * spinVelocity > 0) // sign of spinVelocity has changed(becuase spinVelocity had inverse sign with toEndAngle)
                     {
-                        passedSpinTime = GetSpeedCurveTime(spinSpeedCurve, Mathf.Abs(spinVelocity), baseSpinSpeed); ;
+                        passedSpinTime = GetCurveTime(spinSpeedCurve, Mathf.Abs(spinVelocity) / baseSpinSpeed);
                     }
                 }
             }
@@ -297,9 +318,8 @@ public class CharacterMotion : MonoBehaviour
         }
     }
 
-    float GetSpeedCurveTime(AnimationCurve curve, float speed, float baseSpeed)
+    float GetCurveTime(AnimationCurve curve, float normalizedSpeed)
     {
-        float normalizedSpeed = speed / baseSpeed;
         normalizedSpeed = Mathf.Clamp(normalizedSpeed, curve.Evaluate(0), curve.Evaluate(1));
         float minTime = 0;
         float maxTime = 1;
@@ -307,7 +327,7 @@ public class CharacterMotion : MonoBehaviour
         float mid = curve.Evaluate(midTime);
 
         //binary search
-        while (Mathf.Abs(mid - normalizedSpeed) > SPEED_CURVE_PRECISION)
+        while (maxTime - minTime > SPEED_CURVE_PRECISION || Mathf.Abs(mid - normalizedSpeed) > SPEED_CURVE_PRECISION)
         {
             midTime = minTime + (maxTime - minTime) / 2;
             mid = curve.Evaluate(midTime);
@@ -322,5 +342,10 @@ public class CharacterMotion : MonoBehaviour
         }
 
         return midTime;
+    }
+
+    bool FloatEquals(float a, float b, float treshold = float.Epsilon)
+    {
+        return a - treshold <= b && b <= a + treshold;
     }
 }
