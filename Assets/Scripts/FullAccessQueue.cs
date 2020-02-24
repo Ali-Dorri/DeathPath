@@ -130,8 +130,10 @@ public class FullAccessQueue<T>
                     }
                 }
             }
-
-            throw new IndexOutOfRangeException();
+            else
+            {
+                throw new IndexOutOfRangeException();
+            }
         }
     }
 

@@ -3278,38 +3278,20 @@ PrefabInstance:
       propertyPath: spinVelocity
       value: 400
       objectReference: {fileID: 0}
+    - target: {fileID: 4988591205845372277, guid: 16c136d66b6f8aa4395f9601e129fc15,
+        type: 3}
+      propertyPath: baseMoveSpeed
+      value: 5
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 16c136d66b6f8aa4395f9601e129fc15, type: 3}
---- !u!1 &1931051983 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 2722047680665049880, guid: 16c136d66b6f8aa4395f9601e129fc15,
-    type: 3}
-  m_PrefabInstance: {fileID: 1931051982}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1931051984
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1931051983}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 45b845d210702cc41a26ea3d99a9effc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  positions:
-  - {fileID: 911188425}
-  - {fileID: 1373690353}
-  - {fileID: 1477623281}
-  motion: {fileID: 1931051985}
 --- !u!114 &1931051985 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 4988591205845372277, guid: 16c136d66b6f8aa4395f9601e129fc15,
     type: 3}
   m_PrefabInstance: {fileID: 1931051982}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1931051983}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe1031fa0969f9740b0bbda46eca2458, type: 3}
@@ -3321,7 +3303,7 @@ MonoBehaviour:
     type: 3}
   m_PrefabInstance: {fileID: 1931051982}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1931051983}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30e600926d4aeeb4a9810269671f8816, type: 3}

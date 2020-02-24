@@ -37,6 +37,21 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 22100000, guid: ffd1a5396ea735e4b87c1603e3c6fb97,
         type: 2}
+    - target: {fileID: 8657007662707880808, guid: bfe27508279c4c6478eb6d1434ec6182,
+        type: 3}
+      propertyPath: m_Layer
+      value: 11
+      objectReference: {fileID: 0}
+    - target: {fileID: 8657007662707880808, guid: bfe27508279c4c6478eb6d1434ec6182,
+        type: 3}
+      propertyPath: m_TagString
+      value: Enemy Weapon
+      objectReference: {fileID: 0}
+    - target: {fileID: 8412875354244136082, guid: bfe27508279c4c6478eb6d1434ec6182,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1458364990253067006, guid: bfe27508279c4c6478eb6d1434ec6182,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -98,16 +113,6 @@ PrefabInstance:
       value: 
       objectReference: {fileID: -6385408503264922145, guid: df791e58b9ff2c540a7095b663a98206,
         type: 3}
-    - target: {fileID: 8657007662707880808, guid: bfe27508279c4c6478eb6d1434ec6182,
-        type: 3}
-      propertyPath: m_Layer
-      value: 11
-      objectReference: {fileID: 0}
-    - target: {fileID: 8657007662707880808, guid: bfe27508279c4c6478eb6d1434ec6182,
-        type: 3}
-      propertyPath: m_TagString
-      value: Enemy Weapon
-      objectReference: {fileID: 0}
     - target: {fileID: 733079045513893534, guid: bfe27508279c4c6478eb6d1434ec6182,
         type: 3}
       propertyPath: m_Layer

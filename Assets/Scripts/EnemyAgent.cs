@@ -17,21 +17,24 @@ public class EnemyAgent : MonoBehaviour
     void FixedUpdate()
     {
         Character player = GameManager.Instance.Player;
-        Vector2 direction = ((Vector2)player.transform.position - rigidbody.position).normalized;
-        rigidbody.position += direction * speed * Time.fixedDeltaTime;
+        if(Vector2.Distance(rigidbody.position, player.transform.position) > 0.1f)
+        {
+            Vector2 direction = ((Vector2)player.transform.position - rigidbody.position).normalized;
+            rigidbody.position += direction * speed * Time.fixedDeltaTime;
 
-        //rotate
-        float angle = Vector2.SignedAngle(transform.up, direction);
-        float spin = spinSpeed * Time.fixedDeltaTime * Mathf.Sign(angle);
-        if(Mathf.Abs(spin) > Mathf.Abs(angle))
-        {
-            Quaternion rotation = Quaternion.AngleAxis(angle, Vector3.forward);
-            transform.up = rotation * transform.up;
-        }
-        else
-        {
-            Quaternion rotation = Quaternion.AngleAxis(spin, Vector3.forward);
-            transform.up = rotation * transform.up;
+            //rotate
+            float angle = Vector2.SignedAngle(transform.up, direction);
+            float spin = spinSpeed * Time.fixedDeltaTime * Mathf.Sign(angle);
+            if (Mathf.Abs(spin) > Mathf.Abs(angle))
+            {
+                Quaternion rotation = Quaternion.AngleAxis(angle, Vector3.forward);
+                transform.up = rotation * transform.up;
+            }
+            else
+            {
+                Quaternion rotation = Quaternion.AngleAxis(spin, Vector3.forward);
+                transform.up = rotation * transform.up;
+            }
         }
     }
 

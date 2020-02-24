@@ -7,7 +7,9 @@ public class CharacterMotion : MonoBehaviour
     [Header("Path")]
     [SerializeField] int pathLength = 20;
     [SerializeField] bool showPath = false;
-    FullAccessQueue<Transform> movePath;
+    FullAccessQueue<Vector2> movePath;
+    FullAccessQueue<Vector2> nextPath;
+    FullAccessQueue<Transform> signPoints;
     new Rigidbody2D rigidbody;
     float pointsLength;
     public bool isActive = true;
@@ -22,7 +24,6 @@ public class CharacterMotion : MonoBehaviour
     float moveVelocitySize;
     float passedLength;
     float passedMoveAccelerationTime;
-    Transform startPoint;
 
     //spin
     [Header("Spin")]
@@ -54,42 +55,55 @@ public class CharacterMotion : MonoBehaviour
 
     private void Awake()
     {
-        movePath = new FullAccessQueue<Transform>(pathLength);
+        movePath = new FullAccessQueue<Vector2>(pathLength);
+        nextPath = new FullAccessQueue<Vector2>(pathLength);
+        if (showPath)
+        {
+            signPoints = new FullAccessQueue<Transform>(pathLength);
+        }
         lastSpinTarget = transform.position + transform.up;
         rigidbody = GetComponent<Rigidbody2D>();
     }
 
     public void AddTargetPos(Vector2 position)
     {
-        if(movePath.Count < pathLength)
+        if(nextPath.Count < pathLength)
         {
-            if(movePath.Count == 0)
+            if(nextPath.Count == 0)
             {
-                startPoint = PositionPool.Instance.GetPosition();
-                startPoint.position = transform.position;
-                movePath.Enqueue(startPoint);
+                //add first point
+                if(movePath.Count == 0)
+                {
+                    nextPath.Enqueue(transform.position);
+                    AddSignPoint(transform.position);
+                }
+                else
+                {
+                    Vector2 lastMovePoint = movePath[movePath.Count - 1];
+                    nextPath.Enqueue(lastMovePoint);
+                }
             }
 
-            Transform signPosition = PositionPool.Instance.GetPosition();
-            signPosition.position = position;
-            movePath.Enqueue(signPosition);
-            if (showPath)
-            {
-                signPosition.gameObject.SetActive(true);
-            }
+            nextPath.Enqueue(position);
         }
         else
         {
-            Transform signPosition = movePath.Dequeue();
-            signPosition.position = position;
-            movePath.Enqueue(signPosition);
-            if (showPath)
+            Vector2 firstPoint = nextPath.Dequeue();
+            nextPath[0] = firstPoint;
+            nextPath.Enqueue(position);
+        }
+
+        if (signPoints != null)
+        {
+            if (signPoints.Count < pathLength)
             {
-                signPosition.gameObject.SetActive(true);
+                AddSignPoint(position);
             }
             else
             {
-                signPosition.gameObject.SetActive(false);
+                Transform firstPoint = RemoveSignPoint();
+                firstPoint.position = position;
+                AddSignPoint(firstPoint);
             }
         }
 
@@ -100,21 +114,56 @@ public class CharacterMotion : MonoBehaviour
         //spinVelocity = baseSpinSpeed * spinSpeedCurve.Evaluate(0);
     }
 
+    void AddSignPoint(Vector2 position)
+    {
+        if (signPoints != null)
+        {
+            Transform point = PositionPool.Instance.GetPosition();
+            point.position = position;
+            point.gameObject.SetActive(true);
+            signPoints.Enqueue(point);
+        }
+    }
+
+    void AddSignPoint(Transform point)
+    {
+        if (signPoints != null && point != null)
+        {
+            point.gameObject.SetActive(true);
+            signPoints.Enqueue(point);
+        }
+    }
+
+    Transform RemoveSignPoint()
+    {
+        if (signPoints != null && signPoints.Count != 0)
+        {
+            Transform point = signPoints.Dequeue();
+            point.gameObject.SetActive(false);
+            return point;
+        }
+
+        return null;
+    }
+
     void CalculateBezierLength()
     {
-        //fill cumulativeLengths by the bezier curve point to point lengthes
-        float lengthSum = 0;
-        float interpolatePart = 1f / BEZIER_ESTIMATE_POINTS_COUNT;
-        float interpolation = interpolatePart;
-        Vector2 prevPoint = GetBezierPoint(0);
-        cumulativeLengths[0] = 0;
-        for(int i = 1; i < cumulativeLengths.Length; i++)
+        if(movePath.Count != 0)
         {
-            Vector2 point = GetBezierPoint(interpolation);
-            cumulativeLengths[i] = Vector2.Distance(prevPoint, point) + lengthSum;
-            lengthSum = cumulativeLengths[i];
-            prevPoint = point;
-            interpolation += interpolatePart;
+            //fill cumulativeLengths by the bezier curve point to point lengthes
+            float lengthSum = 0;
+            float interpolatePart = 1f / BEZIER_ESTIMATE_POINTS_COUNT;
+            float interpolation = interpolatePart;
+            Vector2 prevPoint = GetBezierPoint(0);
+            cumulativeLengths[0] = 0;
+            for (int i = 1; i < cumulativeLengths.Length; i++)
+            {
+                Vector2 point = GetBezierPoint(interpolation);
+                cumulativeLengths[i] = Vector2.Distance(prevPoint, point) + lengthSum;
+                lengthSum = cumulativeLengths[i];
+                prevPoint = point;
+                interpolation += interpolatePart;
+            }
         }
     }
 
@@ -136,7 +185,7 @@ public class CharacterMotion : MonoBehaviour
             float prevMoveTime = passedMoveAccelerationTime;
             passedMoveAccelerationTime = (passedMoveAccelerationTime + Time.fixedDeltaTime) / moveCurveTimeScale; 
             passedMoveAccelerationTime = Mathf.Clamp(passedMoveAccelerationTime, 0, 1);
-            float speedSize = baseMoveSpeed * moveSpeedCurve.Evaluate(passedMoveAccelerationTime);
+            float speedSize = baseMoveSpeed /** moveSpeedCurve.Evaluate(passedMoveAccelerationTime)*/;
             float moveLength = speedSize * Time.fixedDeltaTime;
             passedLength += moveLength;
             float interpolate = GetBezierInterpolate(passedLength);
@@ -148,7 +197,7 @@ public class CharacterMotion : MonoBehaviour
             }
             float deltaAngle = Vector2.Angle(moveVelocity, tangent);
             //make the velocity it's projection on nextTangent vector
-            speedSize = Mathf.Cos(deltaAngle * Mathf.PI / 180f) * moveVelocity.magnitude;
+            //speedSize = Mathf.Cos(deltaAngle * Mathf.PI / 180f) * moveVelocity.magnitude;
             float minMoveSpeed = baseMoveSpeed * moveSpeedCurve.Evaluate(0);
             if (speedSize < minMoveSpeed)
             {
@@ -177,18 +226,6 @@ public class CharacterMotion : MonoBehaviour
 
     void RotateToNextPoint()
     {
-        if(movePath.Count > 0)
-        {
-            if(movePath.Peek() == startPoint)
-            {
-                lastSpinTarget = movePath[1].position;
-            }
-            else
-            {
-                lastSpinTarget = movePath.Peek().position;
-            }
-        }
-
         Vector2 toTarget = (lastSpinTarget - (Vector2)transform.position).normalized;
         if (toTarget.normalized != ((Vector2)transform.up).normalized)
         {
@@ -244,24 +281,93 @@ public class CharacterMotion : MonoBehaviour
         {
             spinVelocity = 0;
             passedSpinTime = 0;
+            lastSpinTarget = transform.position + transform.up;
         }
     }
 
     private void UpdateMovePath()
     {
-        // TODO remove the passed move position and stop(moveVelocity = Vector2.zero) if movePath is empty
+        if(movePath.Count > 0)
+        {
+            float interpolate = GetBezierInterpolate(passedLength);
+            float distanceSum = 0;
+            int passedPoints = 0;
+            for (int pointIndex = 1; pointIndex < movePath.Count; pointIndex++)
+            {
+                float distance = Vector2.Distance(movePath[pointIndex], movePath[pointIndex - 1]);
+                distanceSum += distance;
+                if (interpolate < distanceSum)
+                {
+                    passedPoints = pointIndex - 1;
+                    break;
+                }
+                else if (interpolate == distanceSum)
+                {
+                    passedPoints = pointIndex;
+                    break;
+                }
+            }
+            passedPoints++; //index to count
 
+            //remove the passed signPoint
+            if(signPoints != null)
+            {
+                int nextPathSigns = Mathf.Clamp(nextPath.Count - 1, 0, nextPath.Count);
+                int pathSigns = signPoints.Count - nextPathSigns;
+                if(pathSigns > 0)
+                {
+                    int passedSigns = passedPoints - (movePath.Count - pathSigns);
+                    for (int i = 0; i < passedSigns; i++)
+                    {
+                        RemoveSignPoint();
+                    }
+                }
+            }
+
+            //set lastSpinTarget to the point after passed point
+            if(passedPoints != movePath.Count)
+            {
+                lastSpinTarget = movePath[passedPoints];
+            }
+            else
+            {
+                lastSpinTarget = movePath[passedPoints - 1];
+            }
+
+            //passed whole path
+            if (interpolate >= 1)
+            {
+                FullAccessQueue<Vector2> tempPath = movePath;
+                movePath = nextPath;
+                nextPath = tempPath;
+                nextPath.Clear();
+                passedMoveAccelerationTime = 0;
+                passedLength = 0;
+            }
+        }
+        else
+        {
+            //swap pathes
+            FullAccessQueue<Vector2> tempPath = movePath;
+            movePath = nextPath;
+            nextPath = tempPath;
+        }
     }
 
     Vector2 GetBezierPoint(float interpolate)
     {
-        tempBezierPoints.Clear();
-        for (int i = 0; i < movePath.Count; i++)
+        if(movePath.Count != 0)
         {
-            tempBezierPoints.Add(movePath[i].position);
+            tempBezierPoints.Clear();
+            for (int i = 0; i < movePath.Count; i++)
+            {
+                tempBezierPoints.Add(movePath[i]);
+            }
+
+            return GetBezierPointRecursive(tempBezierPoints, movePath.Count, interpolate);
         }
 
-        return GetBezierPointRecursive(tempBezierPoints, movePath.Count, interpolate);
+        throw new System.InvalidOperationException("The move path is empty. Not bezier point exists.");
     }
 
     Vector2 GetBezierPointRecursive(List<Vector2> points, int pointCount, float interpolate)
@@ -276,10 +382,12 @@ public class CharacterMotion : MonoBehaviour
 
             return GetBezierPointRecursive(points, pointCount - 1, interpolate);
         }
-        else
+        else if(pointCount == 1)
         {
             return points[0];
         }
+
+        throw new System.InvalidOperationException("No control point specified to return bezier point.");
     }
 
     float GetBezierInterpolate(float length)
@@ -310,7 +418,7 @@ public class CharacterMotion : MonoBehaviour
         float lengthBefore = cumulativeLengths[midIndex];
         if(lengthBefore == length)
         {
-            return midIndex / BEZIER_ESTIMATE_POINTS_COUNT;
+            return midIndex / (float)BEZIER_ESTIMATE_POINTS_COUNT;
         }
         else
         {
