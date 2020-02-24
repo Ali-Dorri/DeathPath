@@ -227,9 +227,10 @@ public class CharacterMotion : MonoBehaviour
     void RotateToNextPoint()
     {
         Vector2 toTarget = (lastSpinTarget - (Vector2)transform.position).normalized;
-        if (toTarget.normalized != ((Vector2)transform.up).normalized)
+        float toEndAngle = Vector2.SignedAngle(transform.up, toTarget);
+
+        if (Mathf.Abs(toEndAngle) > 9)
         {
-            float toEndAngle = Vector2.SignedAngle(transform.up, toTarget);
             //float spin;
             bool inverseSpin = toEndAngle * spinVelocity < 0; //true if spinVelocity is inverse with rotation to target
 
@@ -292,16 +293,24 @@ public class CharacterMotion : MonoBehaviour
             float interpolate = GetBezierInterpolate(passedLength);
             float distanceSum = 0;
             int passedPoints = 0;
+            float wholeDistanceSum = 0;
+
+            for(int i = 1; i < movePath.Count; i++)
+            {
+                wholeDistanceSum += Vector2.Distance(movePath[i], movePath[i - 1]);
+            }
+
             for (int pointIndex = 1; pointIndex < movePath.Count; pointIndex++)
             {
                 float distance = Vector2.Distance(movePath[pointIndex], movePath[pointIndex - 1]);
                 distanceSum += distance;
-                if (interpolate < distanceSum)
+                float ditanceRatio = distanceSum / wholeDistanceSum;
+                if (interpolate < ditanceRatio)
                 {
                     passedPoints = pointIndex - 1;
                     break;
                 }
-                else if (interpolate == distanceSum)
+                else if (interpolate == ditanceRatio)
                 {
                     passedPoints = pointIndex;
                     break;

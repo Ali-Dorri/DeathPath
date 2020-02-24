@@ -20,10 +20,8 @@ public class PlayerInputController : MonoBehaviour
 
     void OnDrag(Vector2 worldPosition)
     {
-        print(name + ": attempt to add path position: " + worldPosition);
         if(Vector2.Distance(worldPosition, lastPosition)> positionGap)
         {
-            print(name + ": add path position: " + worldPosition);
             motion.AddTargetPos(worldPosition);
             lastPosition = worldPosition;
         }
