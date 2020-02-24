@@ -8,6 +8,8 @@ public class Character : MonoBehaviour
     [SerializeField] Animator animator;
     [SerializeField] float deathTime = 1f;
     [SerializeField] Collider2D bladeCollider;
+    [SerializeField] SpriteRenderer bodyRenderer;
+    [SerializeField] SpriteRenderer bladeRenderer;
 
     public void OnSmash(Collider2D collider, CharacterMotion motion)
     {
@@ -33,6 +35,8 @@ public class Character : MonoBehaviour
         {
             bladeCollider.enabled = false;
         }
+        bodyRenderer.sortingOrder = -1;
+        bladeRenderer.sortingOrder = -1;
     }
 
     IEnumerator DestroyAfterSeconds()
@@ -70,5 +74,7 @@ public class Character : MonoBehaviour
         {
             bladeCollider.enabled = true;
         }
+        bodyRenderer.sortingOrder = 0;
+        bladeRenderer.sortingOrder = 0;
     }
 }

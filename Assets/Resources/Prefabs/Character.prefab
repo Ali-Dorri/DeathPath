@@ -408,6 +408,8 @@ MonoBehaviour:
   animator: {fileID: 1458364988801471727}
   deathTime: 1
   bladeCollider: {fileID: 1453875219633130527}
+  bodyRenderer: {fileID: 1458364988801471713}
+  bladeRenderer: {fileID: 1458364989869198333}
 --- !u!1 &8657007662707880808
 GameObject:
   m_ObjectHideFlags: 0
